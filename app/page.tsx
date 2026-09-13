@@ -1,0 +1,20 @@
+import { supabase } from "@/lib/supabase";
+import MenuClient from "@/components/MenuClient";
+
+export const revalidate = 0;
+
+export default async function Home() {
+  const [{ data: categories }, { data: items }, { data: banners }] = await Promise.all([
+    supabase.from("categories").select("*").order("sort_order"),
+    supabase.from("items").select("*, categories(name)").eq("is_active", true).order("created_at"),
+    supabase.from("banners").select("*").eq("is_active", true).order("created_at", { ascending: false })
+  ]);
+
+  return (
+    <MenuClient
+      categories={(categories ?? []) as any}
+      items={(items ?? []) as any}
+      banners={(banners ?? []) as any}
+    />
+  );
+}
