@@ -1,16 +1,57 @@
 import { redirect } from "next/navigation";
-import { isAdmin } from "@/lib/auth";
 import AdminClient from "@/components/AdminClient";
-import { supabaseAdmin } from "@/lib/supabase";
+import { isAdmin } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function AdminPage() {
-  if (!await isAdmin()) redirect("/admin/login");
-  const [{ data: categories }, { data: items }, { data: banners }] = await Promise.all([
-    supabaseAdmin.from("categories").select("*").order("sort_order"),
-    supabaseAdmin.from("items").select("*, categories(name)").order("created_at"),
-    supabaseAdmin.from("banners").select("*").order("created_at", { ascending: false })
+  const admin = await isAdmin();
+
+  if (!admin) {
+    redirect("/admin/login");
+  }
+
+  const [
+    { data: categories },
+    { data: items },
+    { data: banners },
+    { data: settings },
+  ] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+
+    supabase
+      .from("items")
+      .select("*, categories(name)")
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("banners")
+      .select("*")
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("restaurant_settings")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
-  return <AdminClient categories={(categories ?? []) as any} items={(items ?? []) as any} banners={(banners ?? []) as any}/>;
+
+  return (
+    <AdminClient
+      categories={(categories ?? []) as any}
+      items={(items ?? []) as any}
+      banners={(banners ?? []) as any}
+      settings={
+        (settings ?? {
+          address: "Rawata Mor Chowk, New Delhi - 110073",
+          phone: "9625346361",
+        }) as any
+      }
+    />
+  );
 }

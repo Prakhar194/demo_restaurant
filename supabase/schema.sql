@@ -59,3 +59,55 @@ on conflict (name) do nothing;
 -- In Supabase Dashboard -> Storage, create a PUBLIC bucket named:
 -- restaurant-images
 -- Then the app can upload banner/item images there using the service role key.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Restaurant settings
+create table if not exists public.restaurant_settings (
+  id uuid primary key default gen_random_uuid(),
+  address text not null default '',
+  phone text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+-- Create the default settings row
+insert into public.restaurant_settings (address, phone)
+select
+  'Rawata Mor Chowk, New Delhi - 110073',
+  '9625346361'
+where not exists (
+  select 1 from public.restaurant_settings
+);
+
+-- Public website can read restaurant settings
+alter table public.restaurant_settings enable row level security;
+
+drop policy if exists "public read restaurant settings"
+on public.restaurant_settings;
+
+create policy "public read restaurant settings"
+on public.restaurant_settings
+for select
+using (true);
